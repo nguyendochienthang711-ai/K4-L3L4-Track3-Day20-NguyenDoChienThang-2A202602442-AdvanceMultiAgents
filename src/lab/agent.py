@@ -48,27 +48,30 @@ class PosixShellBackend(LocalShellBackend):
     """LocalShellBackend wrapper that routes commands through Git sh.exe on Windows."""
 
     def execute(self, command: str, *, timeout: int | None = None) -> ExecuteResponse:
-        sh_path = Path(r"C:\Program Files\Git\bin\sh.exe")
-        if sys.platform == "win32" and sh_path.exists():
+        bash_path = Path(r"C:\Program Files\Git\bin\bash.exe")
+        if not bash_path.exists():
+            bash_path = Path(r"C:\Program Files\Git\usr\bin\bash.exe")
+        if sys.platform == "win32" and bash_path.exists():
             if not command or not isinstance(command, str):
                 return ExecuteResponse(output="Error: Command must be a non-empty string.", exit_code=1, truncated=False)
             effective_timeout = timeout if timeout is not None else 30
+            proc = None
             try:
-                result = subprocess.run(
-                    [str(sh_path)],
-                    input=command,
-                    check=False,
-                    capture_output=True,
+                proc = subprocess.Popen(
+                    [str(bash_path), "-c", command],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    stdin=subprocess.DEVNULL,
                     text=True,
-                    timeout=effective_timeout,
                     env=self._env,
                     cwd=str(self.cwd),
                 )
+                stdout, stderr = proc.communicate(timeout=effective_timeout)
                 output_parts = []
-                if result.stdout:
-                    output_parts.append(result.stdout)
-                if result.stderr:
-                    stderr_lines = [l for l in result.stderr.strip().split("\n") if l]
+                if stdout:
+                    output_parts.append(stdout)
+                if stderr:
+                    stderr_lines = [l for l in stderr.strip().split("\n") if l]
                     output_parts.extend(f"[stderr] {line}" for line in stderr_lines)
                 output = "\n".join(output_parts) if output_parts else "<no output>"
                 truncated = False
@@ -76,10 +79,19 @@ class PosixShellBackend(LocalShellBackend):
                     output = output[: self._max_output_bytes]
                     output += f"\n\n... Output truncated at {self._max_output_bytes} bytes."
                     truncated = True
-                if result.returncode != 0:
-                    output = f"{output.rstrip()}\n\nExit code: {result.returncode}"
-                return ExecuteResponse(output=output, exit_code=result.returncode, truncated=truncated)
+                if proc.returncode != 0:
+                    output = f"{output.rstrip()}\n\nExit code: {proc.returncode}"
+                return ExecuteResponse(output=output, exit_code=proc.returncode, truncated=truncated)
             except subprocess.TimeoutExpired:
+                if proc:
+                    try:
+                        subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)], check=False, capture_output=True)
+                    except Exception:
+                        pass
+                    try:
+                        proc.communicate(timeout=2)
+                    except Exception:
+                        pass
                 msg = f"Error: Command timed out after {effective_timeout} seconds."
                 return ExecuteResponse(output=msg, exit_code=124, truncated=False)
             except Exception as e:

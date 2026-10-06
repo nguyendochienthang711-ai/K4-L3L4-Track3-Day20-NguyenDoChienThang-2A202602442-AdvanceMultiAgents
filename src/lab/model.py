@@ -49,18 +49,12 @@ def make_model():
                     except Exception as e:
                         last_exc = e
                         err_str = str(e).lower()
-                        if (
-                            ("402" in err_str or "429" in err_str or "503" in err_str or "500" in err_str)
-                            and (
-                                "in-flight" in err_str
-                                or "in_flight" in err_str
-                                or "rate" in err_str
-                                or "overloaded" in err_str
-                                or "temporarily" in err_str
-                                or "internal server error" in err_str
-                                or "500" in err_str
-                            )
-                        ):
+                        retry_keywords = [
+                            "402", "429", "500", "502", "503", "504",
+                            "rate", "too many", "overload", "temporar",
+                            "timeout", "connection", "protocol", "internal server error",
+                        ]
+                        if any(k in err_str for k in retry_keywords):
                             wait_s = min(15 * (attempt + 1), 60)
                             print(f"[API Retry {attempt+1}] {err_str[:60]}... waiting {wait_s}s", flush=True)
                             time.sleep(wait_s)
@@ -72,7 +66,16 @@ def make_model():
 
 
 
-        return ResilientChatOpenAI(base_url=endpoint, api_key=key, model=deployment, temperature=temperature, timeout=120, **extra_kwargs)
+        import httpx
+        http_client = httpx.Client(timeout=60.0, limits=httpx.Limits(max_keepalive_connections=0, keepalive_expiry=0))
+        return ResilientChatOpenAI(
+            base_url=endpoint,
+            api_key=key,
+            model=deployment,
+            temperature=temperature,
+            http_client=http_client,
+            **extra_kwargs,
+        )
     return init_chat_model(os.getenv("LAB_MODEL", "deepseek:deepseek-chat"), temperature=temperature, **extra_kwargs)
 
 
