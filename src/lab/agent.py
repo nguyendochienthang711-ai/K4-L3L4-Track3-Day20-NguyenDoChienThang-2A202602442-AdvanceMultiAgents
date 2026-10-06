@@ -3,13 +3,15 @@
 Pseudo-code: guides/pseudocode/01_agent.md
 Kiểm tra:    pytest tests/test_02_agent.py
 """
+import os
+import sys
 from pathlib import Path
 
-# TODO 1: import các thành phần cần dùng, ví dụ:
-#   from deepagents import create_deep_agent
-#   from deepagents.backends import LocalShellBackend
-#   from .model import make_model
-#   from .subagents import get_subagents
+from deepagents import create_deep_agent
+from deepagents.backends import LocalShellBackend
+
+from .model import make_model
+from .subagents import get_subagents
 
 # ---- CÓ SẴN, KHÔNG SỬA: system prompt dùng chung cho mọi sinh viên (để đường cơ sở so sánh được) ----
 PATHS_NOTE = (
@@ -38,6 +40,53 @@ SUBAGENTS_NOTE = (
 # --------------------------------------------------------------------------------------------------
 
 
+import subprocess
+from deepagents.backends.protocol import ExecuteResponse
+
+
+class PosixShellBackend(LocalShellBackend):
+    """LocalShellBackend wrapper that routes commands through Git sh.exe on Windows."""
+
+    def execute(self, command: str, *, timeout: int | None = None) -> ExecuteResponse:
+        sh_path = Path(r"C:\Program Files\Git\bin\sh.exe")
+        if sys.platform == "win32" and sh_path.exists():
+            if not command or not isinstance(command, str):
+                return ExecuteResponse(output="Error: Command must be a non-empty string.", exit_code=1, truncated=False)
+            effective_timeout = timeout if timeout is not None else 30
+            try:
+                result = subprocess.run(
+                    [str(sh_path)],
+                    input=command,
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=effective_timeout,
+                    env=self._env,
+                    cwd=str(self.cwd),
+                )
+                output_parts = []
+                if result.stdout:
+                    output_parts.append(result.stdout)
+                if result.stderr:
+                    stderr_lines = [l for l in result.stderr.strip().split("\n") if l]
+                    output_parts.extend(f"[stderr] {line}" for line in stderr_lines)
+                output = "\n".join(output_parts) if output_parts else "<no output>"
+                truncated = False
+                if len(output) > self._max_output_bytes:
+                    output = output[: self._max_output_bytes]
+                    output += f"\n\n... Output truncated at {self._max_output_bytes} bytes."
+                    truncated = True
+                if result.returncode != 0:
+                    output = f"{output.rstrip()}\n\nExit code: {result.returncode}"
+                return ExecuteResponse(output=output, exit_code=result.returncode, truncated=truncated)
+            except subprocess.TimeoutExpired:
+                msg = f"Error: Command timed out after {effective_timeout} seconds."
+                return ExecuteResponse(output=msg, exit_code=124, truncated=False)
+            except Exception as e:
+                return ExecuteResponse(output=f"Error executing command ({type(e).__name__}): {e}", exit_code=1, truncated=False)
+        return super().execute(command, timeout=timeout)
+
+
 def make_backend(sandbox: Path):
     """Tạo backend (môi trường thực thi) cho tác tử.
 
@@ -47,7 +96,32 @@ def make_backend(sandbox: Path):
       - Tác tử chạy được lệnh shell và gọi được `python` (cần đặt PATH).
       - KHÔNG chuyển biến môi trường của bạn vào shell của tác tử (khóa API không được lộ).
     """
-    raise NotImplementedError("TODO 2: cài đặt make_backend (xem guides/pseudocode/01_agent.md)")
+    py_dir = str(Path(sys.executable).parent)
+    if os.name == "nt":
+        candidate_paths = [
+            Path(r"C:\Program Files\Git\usr\bin"),
+            Path(r"C:\Program Files\Git\bin"),
+            Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Git" / "usr" / "bin",
+            Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32",
+        ]
+        extra = [str(p) for p in candidate_paths if p.exists()]
+        path_str = ";".join([py_dir] + extra)
+    else:
+        path_str = f"{py_dir}:/usr/local/bin:/usr/bin:/bin"
+
+    env = {
+        "PATH": path_str,
+        "HOME": str(sandbox),
+        "PYTHONDONTWRITEBYTECODE": "1",
+    }
+    return PosixShellBackend(
+        root_dir=sandbox,
+        virtual_mode=True,
+        inherit_env=False,
+        env=env,
+        timeout=120,
+    )
+
 
 
 def build_agent(sandbox: Path, mode: str = "single", use_skills: bool = False, model=None):
@@ -64,4 +138,27 @@ def build_agent(sandbox: Path, mode: str = "single", use_skills: bool = False, m
     mode không hợp lệ -> ném ValueError.
     Trả về: đồ thị (graph) đã biên dịch, gọi bằng `.invoke({"messages": [...]})`.
     """
-    raise NotImplementedError("TODO 3: cài đặt build_agent (xem guides/pseudocode/01_agent.md)")
+    if mode not in {"single", "subagents"}:
+        raise ValueError(f"Unknown mode: {mode}")
+
+    kwargs = {}
+    prompt = BASE_PROMPT
+
+    if mode == "subagents":
+        kwargs["subagents"] = [
+            {**sub, "system_prompt": sub["system_prompt"] + " " + PATHS_NOTE}
+            for sub in get_subagents()
+        ]
+        prompt = prompt + SUBAGENTS_NOTE
+
+    if use_skills:
+        kwargs["skills"] = ["/skills/"]
+        prompt = prompt + SKILLS_NOTE
+
+    return create_deep_agent(
+        model=model or make_model(),
+        system_prompt=prompt,
+        backend=make_backend(sandbox),
+        **kwargs,
+    )
+

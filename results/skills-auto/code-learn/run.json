@@ -1,0 +1,74 @@
+{
+  "task": "code-learn",
+  "condition": "skills-auto",
+  "role": "learn",
+  "error": "OpenAIAPIError: Error code: 500 - {'error': {'message': 'Internal server error', 'type': 'Internal Server Error', 'code': 500}}",
+  "timestamp": "2026-10-06T05:34:32.399617+00:00",
+  "skills_sha256": "91ac76c4e81c85b5f9b621f07229518d03d0dfac1db617bd25c950ff6a01a1a6",
+  "seconds": 55.4,
+  "tokens": {
+    "input": 38378,
+    "output": 1045,
+    "total": 39423
+  },
+  "tool_calls": 12,
+  "subagent_calls": 0,
+  "skills_read": 0,
+  "skills_modified": false,
+  "final_message": "============================= test session starts =============================\nplatform win32 -- Python 3.11.16, pytest-8.4.2, pluggy-1.6.0 -- C:\\Users\\nguye\\miniconda3\\envs\\ai_workspace_new\\python.exe\ncachedir: .pytest_cache\nrootdir: C:\\Users\\nguye\\AppData\\Local\\Temp\\tmpu8xe8703\\workspace\nplugins: anyio-4.15.1, langsmith-0.14.4, asyncio-1.4.0\nasyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 6 items\n\ntests/test_report.py::test_total_value_plain PASSED                      [ 16%]\ntests/test_report.py::test_total_value_thousands_separator FAILED        [ 33%]\ntests/test_report.py::test_discount_rounding_half_up FAILED              [ 50%]\ntests/test_report.py::test_total_value_with_discount PASSED              [ 66%]\ntests/test_report.py::test_low_stock_basic PASSED                        [ 83%]\ntests/test_report.py::test_csv_row_plain_name PASSED                     [100%]\n\n================================== FAILURES ===================================\n____________________ test_total_value_thousands_separator _____________________\n\n    def test_total_value_thousands_separator():\n        items = [{\"name\": \"laptop\", \"price\": \"$1,299.50\", \"qty\": 2}]\n>       assert total_value(items) == Decimal(\"2599.00\")\n               ^^^^^^^^^^^^^^^^^^\n\nC:\\Users\\Public\\Documents\\AI_BAITAP\\K4-L3L4-Track3-Day20-NguyenDoChienThang-2A202602442-AdvanceMultiAgents\\tasks\\code-learn\\workspace\\tests\\test_report.py:15: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\ninventory\\report.py:14: in total_value\n    price = parse_price(item[\"price\"])\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\n\ntext = '$1,299.50'\n\n    def parse_price(text):\n        \"\"\"Convert a price string to a Decimal.\n    \n        Supported formats:\n          \"$1,299.50\" -> Decimal(\"1299.50\")\n          \"  12 \"     -> Decimal(\"12\")\n          \"1299.5\"    -> Decimal(\"1299.5\")\n          \"(12.00)\"   -> Decimal(\"-12.00\")   # accounting style: parentheses mean negative\n        \"\"\"\n        cleaned = text.strip().replace(\"$\", \"\")\n>       return Decimal(cleaned)\n               ^^^^^^^^^^^^^^^^\nE       decimal.InvalidOperation: [<class 'decimal.ConversionSyntax'>]\n\ninventory\\pricing.py:15: InvalidOperation\n_______________________ test_discount_rounding_half_up ________________________\n\n    def test_discount_rounding_half_up():\n>       assert apply_discount(Decimal(\"10.05\"), 10) == Decimal(\"9.05\")\nE       AssertionError: assert Decimal('9.04') == Decimal('9.05')\nE        +  where Decimal('9.04') = apply_discount(Decimal('10.05'), 10)\nE        +    where Decimal('10.05') = Decimal('10.05')\nE        +  and   Decimal('9.05') = Decimal('9.05')\n\nC:\\Users\\Public\\Documents\\AI_BAITAP\\K4-L3L4-Track3-Day20-NguyenDoChienThang-2A202602442-AdvanceMultiAgents\\tasks\\code-learn\\workspace\\tests\\test_report.py:19: AssertionError\n=========================== short test summary info ===========================\nFAILED tests/test_report.py::test_total_value_thousands_separator - decimal.I...\nFAILED tests/test_report.py::test_discount_rounding_half_up - AssertionError:...\n========================= 2 failed, 4 passed in 0.12s =========================\n\nExit code: 1\n[Command failed with exit code 1]",
+  "score": 0.0,
+  "passed": 0,
+  "total": 10,
+  "checks": [
+    {
+      "name": "visible_suite_passes",
+      "passed": false,
+      "detail": "2 failed, 4 passed in 0.09s"
+    },
+    {
+      "name": "tests_not_modified",
+      "passed": false,
+      "detail": "the original files in tests/ must not be modified (new test files are allowed)"
+    },
+    {
+      "name": "parse_price_all_formats",
+      "passed": false,
+      "detail": "wrong for: ['$1,299.50', '(12.00)', '$1,000,000.00']"
+    },
+    {
+      "name": "other_caller_fixed",
+      "passed": false,
+      "detail": "to_csv_row returned '<InvalidOperation>'"
+    },
+    {
+      "name": "discount_rounds_half_up",
+      "passed": false,
+      "detail": "wrong for: [('10.05', 10, '9.05'), ('0.05', 50, '0.03'), ('2.665', 0, '2.67')]"
+    },
+    {
+      "name": "low_stock_follows_docstring",
+      "passed": false,
+      "detail": "low_stock returned ['b', 'A', 'c']"
+    },
+    {
+      "name": "csv_quoting_follows_docstring",
+      "passed": false,
+      "detail": "to_csv_row returned 'Desk, large \"oak\",10.00,2'"
+    },
+    {
+      "name": "rule_type_hints",
+      "passed": false,
+      "detail": "RULE: every public function (name not starting with '_') in the package has type annotations on all parameters and on the return value."
+    },
+    {
+      "name": "rule_regression_tests",
+      "passed": false,
+      "detail": "RULE: add tests/test_regressions.py with one test function per bug you fixed (at least 3); the file must pass."
+    },
+    {
+      "name": "rule_changelog",
+      "passed": false,
+      "detail": "RULE: record each fix in CHANGELOG.md under the heading '## Unreleased' as a bullet '- fix(<function name>): <short description>' (at least 3 bullets)."
+    }
+  ]
+}

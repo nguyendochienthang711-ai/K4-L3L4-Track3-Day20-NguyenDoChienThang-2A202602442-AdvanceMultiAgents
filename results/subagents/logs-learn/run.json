@@ -1,0 +1,69 @@
+{
+  "task": "logs-learn",
+  "condition": "subagents",
+  "role": "learn",
+  "error": null,
+  "timestamp": "2026-10-06T04:22:51.738534+00:00",
+  "skills_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "seconds": 200.4,
+  "tokens": {
+    "input": 279969,
+    "output": 5815,
+    "total": 285784
+  },
+  "tool_calls": 27,
+  "subagent_calls": 0,
+  "skills_read": 0,
+  "skills_modified": false,
+  "final_message": "The output looks correct. Let me verify a few specific entries against the log file to make sure the parsing is accurate:\n\n1. First entry: `2024-04-30T22:06:40-05:00 [ERROR] inventory-service: Stock update failed sku=72` - This should be 2024-05-01T03:06:40Z (adding 5 hours). ✓\n\n2. Second entry: `2024-05-01T03:09:30Z [error] inventory-service: Upstream call failed id=413` with traceback - exception should be \"TimeoutError: upstream did not answer in 30s\". ✓\n\n3. Third entry: `2024-05-01T10:43:13+07:00 [Error] auth-service: Charge failed order=222` - This should be 2024-05-01T03:43:13Z (subtracting 7 hours). ✓\n\n4. Fourth entry: `2024-04-30T22:54:35-05:00 [Error] inventory-service: Stock update failed sku=148 -- last message repeated 2 times --` - This should be 2024-05-01T03:54:35Z with repeat_count = 3 (1 + 2). ✓\n\n5. Fifth entry: `2024-04-30T22:56:45-05:00 [Error] payment-service: Upstream call failed id=811` with traceback - exception should be \"TimeoutError: upstream did not answer in 30s\". ✓\n\n6. Sixth entry: `2024-05-01T11:02:04+07:00 [error] payment-service: Charge failed order=28` - This should be 2024-05-01T04:02:04Z. ✓\n\n7. Seventh entry: `2024-04-30T23:06:19-05:00 [CRITICAL] auth-service: Queue overflow depth=515` with traceback - exception should be \"KeyError: 'sku'\". ✓\n\n8. Eighth entry: `2024-05-01T04:08:17Z [ERROR] inventory-service: Upstream call failed id=191` with traceback - exception should be \"ValueError: invalid card number\". ✓\n\n9. Ninth entry: `2024-05-01T04:17:25Z [CRITICAL] inventory-service: Queue overflow depth=417` with traceback - exception should be \"TimeoutError: upstream did not answer in 30s\". ✓\n\n10. Tenth entry: `2024-05-01T11:25:11+07:00 [critical] payment-service: Queue overflow depth=327` with traceback - exception should be \"KeyError: 'sku'\". ✓\n\n11. Eleventh entry: `2024-05-01T04:49:49Z [ERROR] auth-service: Charge failed order=741` with traceback - exception should be \"TimeoutError: upstream did not answer in 30s\". ✓\n\n12. Twelfth entry: `2024-05-01T11:50:54+07:00 [Error] inventory-service: Charge failed order=471` with traceback - exception should be \"ValueError: invalid card number\". ✓\n\n13. Thirteenth entry: `2024-05-01T11:56:56+07:00 [critical] payment-service: Database unreachable node=640` - no traceback, exception null. ✓\n\n14. Fourteenth entry: `2024-05-01T00:05:36-05:00 [ERROR] auth-service: Upstream call failed id=988` - This should be 2024-05-01T05:05:36Z. ✓\n\n15. Fifteenth entry: `2024-05-01T00:15:13-05:00 [Error] auth-service: Stock update failed sku=935` with traceback - exception should be \"ValueError: invalid card number\". ✓\n\n16. Sixteenth entry: `2024-05-01T05:18:36Z [Error] payment-service: Charge failed order=777` with traceback - exception should be \"ValueError: invalid card number\". ✓\n\n17. Seventeenth entry: `2024-05-01T12:22:52+07:00 [ERROR] auth-service: Charge failed order=365` with traceback - exception should be \"TimeoutError: upstream did not answer in 30s\". ✓\n\n18. Eighteenth entry: `2024-05-01T05:29:03Z [ERROR] auth-service: Upstream call failed id=830` with traceback - exception should be \"ConnectionResetError: peer closed connection\". ✓\n\n19. Nineteenth entry: `2024-05-01T12:33:38+07:00 [Error] payment-service: Charge failed order=900` - no traceback, exception null. ✓\n\n20. Twentieth entry: `2024-05-01T05:37:34Z [error] inventory-service: Charge failed order=266` with traceback - exception should be \"TimeoutError: upstream did not answer in 30s\". ✓\n\n21. Twenty-first entry: `2024-05-01T00:41:52-05:00 [Error] auth-service: Stock update failed sku=644` with traceback - exception should be \"ValueError: invalid card number\". ✓\n\n22. Twenty-second entry: `2024-05-01T13:01:43+07:00 [error] payment-service: Upstream call failed id=614` - no traceback, exception null. ✓\n\n23. Twenty-third entry: `2024-05-01T01:04:08-05:00 [Error] payment-service: Stock update failed sku=30` with traceback - exception should be \"ConnectionResetError: peer closed connection\". ✓\n\n24. Twenty-fourth entry: `2024-05-01T06:19:16Z [Error] inventory-service: Upstream call failed id=858` with traceback - exception should be \"TimeoutError: upstream did not answer in 30s\". ✓\n\n25. Twenty-fifth entry: `2024-05-01T13:19:56+07:00 [ERROR] inventory-service: Upstream call failed id=669 -- last message repeated 2 times --` - This should be 2024-05-01T06:19:56Z with repeat_count = 3 (1 + 2). ✓\n\nAll entries look correct. The counts_by_service also matches:\n- inventory-service: 1 (sku=72) + 1 (id=413) + 3 (sku=148) + 1 (id=191) + 1 (depth=417) + 1 (order=471) + 1 (order=266) + 1 (id=858) + 3 (id=669) = 13 ✓\n- auth-service: 1 (order=222) + 1 (depth=515) + 1 (order=741) + 1 (id=988) + 1 (sku=935) + 1 (order=365) + 1 (id=830) + 1 (sku=644) = 8 ✓\n- payment-service: 1 (id=811) + 1 (order=28) + 1 (depth=327) + 1 (node=640) + 1 (order=777) + 1 (order=900) + 1 (id=614) + 1 (sku=30) = 8 ✓\n\nThe output is complete",
+  "score": 0.6666666666666666,
+  "passed": 6,
+  "total": 9,
+  "checks": [
+    {
+      "name": "valid_structure",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "entry_count",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "timestamps_utc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "exception_fields",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "repeat_counts",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "counts_by_service",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "rule_service_names",
+      "passed": false,
+      "detail": "RULE: service names in the output are lower-case with '-' replaced by '_' (payment-service -> payment_service)."
+    },
+    {
+      "name": "rule_sorted_errors",
+      "passed": false,
+      "detail": "RULE: `errors` is sorted by service, then by timestamp_utc, ascending."
+    },
+    {
+      "name": "rule_schema_header",
+      "passed": false,
+      "detail": "RULE: the top-level object has \"schema_version\": 2 and \"generated_by\": \"log-triage\"."
+    }
+  ]
+}
